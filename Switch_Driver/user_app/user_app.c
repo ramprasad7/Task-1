@@ -23,7 +23,7 @@ int main(){
             return -1;
         }
         printf("from buffer <%d>\n",buff);
-        wait(1);
+        sleep(1);
     }
     
     close(fd1);
