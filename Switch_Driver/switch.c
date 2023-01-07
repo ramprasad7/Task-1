@@ -6,8 +6,9 @@
 #include <linux/cdev.h>
 #include <linux/device.h>
 #include <linux/delay.h>
-#include <linux/uaccess.h>  //copy_to/from_user()
-#include <linux/gpio.h>     //GPIO
+#include<linux/wait.h>
+#include <linux/uaccess.h>  
+#include <linux/gpio.h>     
 #include <linux/interrupt.h>
 #include <linux/err.h>
 #include <linux/jiffies.h>
@@ -25,9 +26,9 @@ unsigned long old_jiffie = 0;
 
 unsigned int led_toggle = 0; 
 
-unsigned int gpio_irq_number;
+static unsigned int gpio_irq_number;
 
-int delay_flag = 0;
+unsigned int delay_flag = 0;
 
 static irqreturn_t gpio_irq_handler(int irq,void *dev_id) {
 	static unsigned long flags = 0;
@@ -41,7 +42,7 @@ static irqreturn_t gpio_irq_handler(int irq,void *dev_id) {
 	local_irq_save(flags);
 	led_toggle = (1 ^ led_toggle);                             
 	gpio_set_value(GPIO_21_OUT, led_toggle);                      
-	printk("Interrupt Occurred : GPIO_21_OUT : %d ",gpio_get_value(GPIO_21_OUT));
+	printk("Interrupt Occurred : setting GPIO-%d to %d\n",GPIO_21_OUT,gpio_get_value(GPIO_20_IN));
 	local_irq_restore(flags);
 	delay_flag = 0;
 	return IRQ_HANDLED;
@@ -95,7 +96,7 @@ static ssize_t switch_read(struct file *filp,char __user *buf, size_t len, loff_
 	len = 1;
 	if(delay_flag == 1){
 		printk("Waiting for debounce\n");
-		mdelay(200);
+		mdelay(500);
 	}
 	if( copy_to_user(buf, &gpio_state, len) > 0) {
 		pr_err("ERROR: Not all the bytes have been copied to user\n");
