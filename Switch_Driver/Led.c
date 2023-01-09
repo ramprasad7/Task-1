@@ -6,35 +6,32 @@
 #include <linux/gpio.h>     
 #include <linux/err.h>
 
+/*GPIO PIN*/
+#define LED_OUT (21)
 
-#define GPIO_21 (21)
-
-
-
-
+/*module init function*/
 static int __init led_init(void){
-	if(gpio_is_valid(GPIO_21) == false){
-		printk("GPIO- %d is not valid\n",GPIO_21);
-		gpio_free(GPIO_21);
+	if(gpio_is_valid(LED_OUT) == false){
+		printk("GPIO- %d is not valid\n",LED_OUT);
 		return -1;
 	}
-	if(gpio_request(GPIO_21,"GPIO_21") <0){
-		printk("GPIO - %d failed to request\n",GPIO_21);
-		gpio_free(GPIO_21);
+	if(gpio_request(LED_OUT,"LED_OUT") <0){
+		printk("GPIO - %d failed to request\n",LED_OUT);
 		return -1;
 	}	       
-	if(gpio_direction_output(GPIO_21,0) < 0){
+	if(gpio_direction_output(LED_OUT,0) < 0){
 		printk("failed to set direction\n");
-		gpio_free(GPIO_21);
+		gpio_free(LED_OUT);
 		return -1;
 	}
-	printk("Module has been loaded\n");
+	printk("Led INIT Module has been loaded\n");
 	return 0;
 }
 
+/*module cleanup function*/
 static void __exit led_cleanup(void){
-	gpio_free(GPIO_21);
-	printk("Device driver has been removed succefully\n");
+	gpio_free(LED_OUT);
+	printk("Led INIT Module has been removed succefully\n");
 }
 
 
@@ -42,9 +39,9 @@ module_init(led_init);
 module_exit(led_cleanup);
 
 
-
+/*Meta Information*/
 MODULE_AUTHOR("Ram");
-MODULE_DESCRIPTION("GPIO Out Device Driver");
+MODULE_DESCRIPTION("Simple LED initialising Device Driver");
 MODULE_LICENSE("GPL");
 MODULE_VERSION("1.0");
 

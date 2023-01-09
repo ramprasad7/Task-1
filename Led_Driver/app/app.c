@@ -12,7 +12,7 @@ int main(){
     fd = open("/dev/led_device",O_RDWR);
 
     if(fd < 0){
-        printf("Failed to open device file\n");
+        printf("Failed to open led device file\n");
         return -1;
     }
 

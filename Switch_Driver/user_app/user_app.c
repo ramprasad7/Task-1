@@ -22,10 +22,9 @@ int main(){
             printf("Failed to read from dev file\n");
             return -1;
         }
-        printf("from buffer <%d>\n",buff);
+        printf("Switch State = <%d>\n",buff);
         sleep(1);
     }
-    
     close(fd1);
     return 0;
 }
