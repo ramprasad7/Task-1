@@ -192,14 +192,14 @@ static int __init led_init(void){
 static void __exit led_cleanup(void){
     dev_t dev_num;
     int i,major;
-    major = MAJOR(device_number);
+    major = MAJOR(major_number);
     for(i=0;i<MAX;i++){
         dev_num = MKDEV(major ,i);
         cdev_del(&led_cdev[i]);
         device_destroy(led_class,dev_num);
     }
     class_destroy(led_class);
-    unregister_chrdev_region(device_number,MAX);
+    unregister_chrdev_region(major_number,MAX);
     printk("Multiple Leds Device driver has been removed succefully\n");
 }
 
