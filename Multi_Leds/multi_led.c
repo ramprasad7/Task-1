@@ -37,48 +37,22 @@ static struct cdev led_cdev[MAX];
 static int led_open(struct inode *pinode,struct file *pfile){
     int minor = iminor(file_inode(pfile));
     printk("Multiled Device file opened...\n");
-    if( minor == 0 ){
-        if(gpio_is_valid(leds_gpio[minor].gpio) == false){
-            printk("GPIO - %d is not valid\n",leds_gpio[minor].gpio);
-            return -1;
-        }
-        if(gpio_request(leds_gpio[minor].gpio,"RED_LED") < 0){
-            printk("GPIO - %d failed to request\n",leds_gpio[minor].gpio);
-            return -1;
-        }
-        if(gpio_direction_output(leds_gpio[minor].gpio,0) < 0){
-            printk("GPIO -%d failed to set direction\n",leds_gpio[minor].gpio);
-            gpio_free(leds_gpio[minor].gpio);
-            return -1;
-        }
-    }else if(minor == 1){
-        if(gpio_is_valid(leds_gpio[minor].gpio) == false){
-            printk("GPIO - %d is not valid\n",leds_gpio[minor].gpio);
-            return -1;
-        }
-        if(gpio_request(leds_gpio[minor].gpio,"RED_LED") < 0){
-            printk("GPIO - %d failed to request\n",leds_gpio[minor].gpio);
-            return -1;
-        }
-        if(gpio_direction_output(leds_gpio[minor].gpio,0) < 0){
-            printk("GPIO -%d failed to set direction\n",leds_gpio[minor].gpio);
-            gpio_free(leds_gpio[minor].gpio);
-            return -1;
-        }  
-    }else if(minor == 2){
-        if(gpio_is_valid(leds_gpio[minor].gpio) == false){
-            printk("GPIO - %d is not valid\n",leds_gpio[minor].gpio);
-            return -1;
-        }
-        if(gpio_request(leds_gpio[minor].gpio,"RED_LED") < 0){
-            printk("GPIO - %d failed to request\n",leds_gpio[minor].gpio);
-            return -1;
-        }
-        if(gpio_direction_output(leds_gpio[minor].gpio,0) < 0){
-            printk("GPIO -%d failed to set direction\n",leds_gpio[minor].gpio);
-            gpio_free(leds_gpio[minor].gpio);
-            return -1;
-        }
+    if(minor >= MAX){
+        printk("Minor number has exceed MAX number of devices\n");
+        return -1;
+    }
+    if(gpio_is_valid(leds_gpio[minor].gpio) == false){
+        printk("GPIO - %d is not valid\n",leds_gpio[minor].gpio);
+        return -1;
+    }
+    if(gpio_request(leds_gpio[minor].gpio,"RED_LED") < 0){
+        printk("GPIO - %d failed to request\n",leds_gpio[minor].gpio);
+        return -1;
+    }
+    if(gpio_direction_output(leds_gpio[minor].gpio,0) < 0){
+        printk("GPIO -%d failed to set direction\n",leds_gpio[minor].gpio);
+        gpio_free(leds_gpio[minor].gpio);
+        return -1;
     }
     return 0;
 }
@@ -86,8 +60,12 @@ static int led_open(struct inode *pinode,struct file *pfile){
 /*release function*/
 static int led_close(struct inode *pinode,struct file *pfile){
     int minor = iminor(file_inode(pfile));
-    printk("Device file closed!\n");
+    if(minor >= MAX){
+        printk("Minor number has exceed MAX number of devices\n");
+        return -1;
+    }
     gpio_free(leds_gpio[minor].gpio);
+    printk("Device file closed!\n");
     return 0;
 }
 
@@ -100,40 +78,28 @@ static ssize_t led_read(struct file* pfile,char* __user buf,size_t len,loff_t *l
 /*write function*/
 static ssize_t led_write(struct file* pfile,const char* __user buf,size_t len,loff_t *loff){
     uint8_t dev_buf[10] = {0};
-    printk("Changing led state\n");
+    printk("Changing led state...\n");
+
     int minor = iminor(file_inode(pfile));
+    
+    
     if(copy_from_user(dev_buf,buf,len) > 0){
         printk("Couldn't write all the given bytes\n");
         return -1;
     }
-    if(minor == 0){
-        if(dev_buf[0] == '0'){
-            gpio_set_value(leds_gpio[minor].gpio,0);
-        }else if(dev_buf[0] == '1'){
-            gpio_set_value(leds_gpio[minor].gpio,1);
-        }else{
-            printk("Please write either 1 or 0 to on/off Led\n");
-            return -1;
-        }
-   }else if( minor == 1){
-        if(dev_buf[0] == '0'){
-            gpio_set_value(leds_gpio[minor].gpio,0);
-        }else if(dev_buf[0] == '1'){
-            gpio_set_value(leds_gpio[minor].gpio,1);
-        }else{
-            printk("Please write either 1 or 0 to on/off Led\n");
-            return -1;
-        }
-   }else if(minor == 2){
-        if(dev_buf[0] == '0'){
-            gpio_set_value(leds_gpio[minor].gpio,0);
-        }else if(dev_buf[0] == '1'){
-            gpio_set_value(leds_gpio[minor].gpio,1);
-        }else{
-            printk("Please write either 1 or 0 to on/off Led\n");
-            return -1;
-        }
-   }
+    if(minor >= MAX){
+        printk("Minor number has exceed MAX number of devices\n");
+        return -1;
+    }
+
+    if(dev_buf[0] == '0'){
+        gpio_set_value(leds_gpio[minor].gpio,0);
+    }else if(dev_buf[0] == '1'){
+        gpio_set_value(leds_gpio[minor].gpio,1);
+    }else{
+        printk("Please write either 1 or 0 to on/off Led\n");
+        return -1;
+    }
     return len;
 }
 
@@ -167,7 +133,7 @@ static int __init led_init(void){
     }
     for(i=0;i<MAX;i++){
         dev_num = MKDEV(major,i);
-        printk("1st minor number = %d\n",MINOR(dev_num));
+        printk("minor number = %d\n",MINOR(dev_num));
         cdev_init(&led_cdev[i],&fops);
         if(cdev_add(&led_cdev[i],dev_num,1) < 0){
             printk("Failed at cdev_add\n");
