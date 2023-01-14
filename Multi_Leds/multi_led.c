@@ -8,17 +8,16 @@
 #include<linux/uaccess.h>
 #include<linux/gpio.h>
 
-/*Max number minor devices*/
-#define MAX 3
+/*MAX number minor devices*/
+#define MAX_LEDS 3
 
 /*GPIO pins*/
-
 #define RED_LED (21)
 #define GREEN_LED (20)
 #define YELLOW_LED (16)
 
 /*Gpio pins struct array*/
-static struct gpio leds_gpio[] = {
+static struct gpio led_pins[] = {
     {RED_LED,GPIOF_OUT_INIT_LOW,"Red LED-1"},
     {GREEN_LED,GPIOF_OUT_INIT_LOW,"GreenLED-2"},
     {YELLOW_LED,GPIOF_OUT_INIT_LOW,"Yellow LED-3"}
@@ -29,7 +28,7 @@ static dev_t major_number;
 /*class structure*/
 static struct class* led_class;
 /*cdev structure*/
-static struct cdev led_cdev[MAX];
+static struct cdev led_cdev[MAX_LEDS];
 
 
 
@@ -37,21 +36,21 @@ static struct cdev led_cdev[MAX];
 static int led_open(struct inode *pinode,struct file *pfile){
     int minor = iminor(file_inode(pfile));
     printk("Multiled Device file opened...\n");
-    if(minor >= MAX){
-        printk("Minor number has exceed MAX number of devices\n");
+    if(minor >= MAX_LEDS){
+        printk("Minor number has exceed MAX_LEDS number of devices\n");
         return -1;
     }
-    if(gpio_is_valid(leds_gpio[minor].gpio) == false){
-        printk("GPIO - %d is not valid\n",leds_gpio[minor].gpio);
+    if(gpio_is_valid(led_pins[minor].gpio) == false){
+        printk("GPIO - %d is not valid\n",led_pins[minor].gpio);
         return -1;
     }
-    if(gpio_request(leds_gpio[minor].gpio,"RED_LED") < 0){
-        printk("GPIO - %d failed to request\n",leds_gpio[minor].gpio);
+    if(gpio_request(led_pins[minor].gpio,"LED_PIN") < 0){
+        printk("GPIO - %d failed to request\n",led_pins[minor].gpio);
         return -1;
     }
-    if(gpio_direction_output(leds_gpio[minor].gpio,0) < 0){
-        printk("GPIO -%d failed to set direction\n",leds_gpio[minor].gpio);
-        gpio_free(leds_gpio[minor].gpio);
+    if(gpio_direction_output(led_pins[minor].gpio,0) < 0){
+        printk("GPIO -%d failed to set direction\n",led_pins[minor].gpio);
+        gpio_free(led_pins[minor].gpio);
         return -1;
     }
     return 0;
@@ -60,42 +59,53 @@ static int led_open(struct inode *pinode,struct file *pfile){
 /*release function*/
 static int led_close(struct inode *pinode,struct file *pfile){
     int minor = iminor(file_inode(pfile));
-    if(minor >= MAX){
-        printk("Minor number has exceed MAX number of devices\n");
+    if(minor >= MAX_LEDS){
+        printk("Minor number has exceed MAX_LEDS number of devices\n");
         return -1;
     }
-    gpio_free(leds_gpio[minor].gpio);
+    gpio_free(led_pins[minor].gpio);
     printk("Device file closed!\n");
     return 0;
 }
 
 /*read function*/
 static ssize_t led_read(struct file* pfile,char* __user buf,size_t len,loff_t *loff){
-    printk("Led Device file opened to read\n",len);
+    uint8_t led_state = 0;
+    int minor = iminor(file_inode(pfile));
+    printk("Led Device file opened to read\n");
+    if(minor >= MAX_LEDS){
+        printk("Minor number as exceeded maximum number of devices\n");
+        return -1;
+    }
+    led_state = gpio_get_value(led_pins[minor].gpio);
+    
+    if(copy_to_user(buf,&led_state,1) > 0){
+        printk("failed to write all the bytes to user\n");
+        return -1;
+    }
     return len;
 }
 
 /*write function*/
 static ssize_t led_write(struct file* pfile,const char* __user buf,size_t len,loff_t *loff){
     uint8_t dev_buf[10] = {0};
-    printk("Changing led state...\n");
-
     int minor = iminor(file_inode(pfile));
     
+    printk("Changing led state...\n");
     
     if(copy_from_user(dev_buf,buf,len) > 0){
         printk("Couldn't write all the given bytes\n");
         return -1;
     }
-    if(minor >= MAX){
-        printk("Minor number has exceed MAX number of devices\n");
+    if(minor >= MAX_LEDS){
+        printk("Minor number has exceed MAX_LEDS number of devices\n");
         return -1;
     }
 
     if(dev_buf[0] == '0'){
-        gpio_set_value(leds_gpio[minor].gpio,0);
+        gpio_set_value(led_pins[minor].gpio,0);
     }else if(dev_buf[0] == '1'){
-        gpio_set_value(leds_gpio[minor].gpio,1);
+        gpio_set_value(led_pins[minor].gpio,1);
     }else{
         printk("Please write either 1 or 0 to on/off Led\n");
         return -1;
@@ -115,7 +125,7 @@ static struct file_operations fops = {
 
 /*module init function*/
 static int __init led_init(void){
-    int err = alloc_chrdev_region(&major_number,0,MAX,"led_devices");
+    int err = alloc_chrdev_region(&major_number,0,MAX_LEDS,"led_devices");
     dev_t dev_num;
     int major,i;
     if(err < 0){
@@ -131,12 +141,12 @@ static int __init led_init(void){
         unregister_chrdev_region(major_number,1);
         return -2;
     }
-    for(i=0;i<MAX;i++){
+    for(i=0;i<MAX_LEDS;i++){
         dev_num = MKDEV(major,i);
-        printk("minor number = %d\n",MINOR(dev_num));
+        printk("Minor Number = %d\n",MINOR(dev_num));
         cdev_init(&led_cdev[i],&fops);
         if(cdev_add(&led_cdev[i],dev_num,1) < 0){
-            printk("Failed at cdev_add\n");
+            printk("Failed to cdev_add led device\n");
             class_destroy(led_class);
             unregister_chrdev_region(major_number,1);
             return -3;
@@ -159,13 +169,13 @@ static void __exit led_cleanup(void){
     dev_t dev_num;
     int i,major;
     major = MAJOR(major_number);
-    for(i=0;i<MAX;i++){
+    for(i=0;i<MAX_LEDS;i++){
         dev_num = MKDEV(major ,i);
         cdev_del(&led_cdev[i]);
         device_destroy(led_class,dev_num);
     }
     class_destroy(led_class);
-    unregister_chrdev_region(major_number,MAX);
+    unregister_chrdev_region(major_number,MAX_LEDS);
     printk("Multiple Leds Device driver has been removed succefully\n");
 }
 

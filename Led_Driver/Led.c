@@ -48,10 +48,7 @@ static ssize_t led_read(struct file* pfile,char* __user buf,size_t len,loff_t *o
 	if(copy_to_user(buf,&gpio_state,len) > 0){
 		printk("Couldn't write all the bytes to user\n");
 	}
-
-	printk("From GPIO - %d =  %d\n",LED_GPIO_OUT,gpio_state);
-
-
+	printk("GPIO - %d  state =  %d\n",LED_GPIO_OUT,gpio_state);
 	return len;  
 }
 
@@ -64,7 +61,6 @@ static ssize_t led_write(struct file* pfile,const char* __user buf,size_t len,lo
 		printk("Failed to write all the bytes to Led\n");
 	}
 	printk("Wrote : %c\n",dev_buf[0]);
-
 	if(dev_buf[0] == '1'){
 		gpio_set_value(LED_GPIO_OUT,1);
 	}else if(dev_buf[0] == '0'){
@@ -77,7 +73,7 @@ static ssize_t led_write(struct file* pfile,const char* __user buf,size_t len,lo
 }
 /*release function*/
 static int led_release(struct inode* pinod,struct file* pfile){
-	printk("Device has been closed\n");
+	printk("Led Device has been closed\n");
 	gpio_free(LED_GPIO_OUT);
 	return 0;
 }
@@ -103,6 +99,7 @@ static int __init led_init(void){
 	printk("Led device has been registered successfully with <Major> : <Minor> = %d : %d\n",MAJOR(led_dev),MINOR(led_dev));
 
 	cdev_init(&led_cdev,&fops);
+	
 	led_cdev.owner = THIS_MODULE;
 
 	if(cdev_add(&led_cdev,led_dev,1) < 0){
