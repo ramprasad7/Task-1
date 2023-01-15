@@ -12,7 +12,7 @@
 #include <linux/interrupt.h>
 #include <linux/err.h>
 #include <linux/jiffies.h>
-
+#include<linux/timer.h>
 
 /*Gpio pins*/
 #define LED_GPIO_OUT (21)
@@ -29,18 +29,22 @@ static struct cdev switch_cdev;
 /*storing irq number*/
 static unsigned int switch_irq_number;
 
+/*timer variable*/
+static struct timer_list switch_timer;
+
+/*switch for interrupt handler*/
+static uint8_t switch_state = 0;
+	
+/*timer callback*/
+void switch_callback(struct timer_list *data){
+	gpio_set_value(LED_GPIO_OUT, switch_state); //based on switch value led state is changed                      
+	printk("Interrupt Occurred : Toggling LED to %d\n",switch_state);
+}
 
 /*Interrupt handler*/
 static irqreturn_t gpio_irq_handler(int irq,void *dev_id) {
-	uint8_t switch_state = 0;
 	switch_state = gpio_get_value(SWITCH_GPIO_IN);
-	gpio_set_value(LED_GPIO_OUT, switch_state); //based on switch value led state is changed                      
-	printk("Interrupt Occurred : Toggling LED to %d\n",switch_state);
-	if(switch_state == 1){
-		mdelay(1000);
-	}else if(switch_state == 0){
-		mdelay(500);
-	}
+	mod_timer(&switch_timer,jiffies + msecs_to_jiffies(200));
 	return IRQ_HANDLED;
 }
 
@@ -68,21 +72,21 @@ static int switch_open(struct inode *inode, struct file *file){
 		gpio_free(SWITCH_GPIO_IN);
 		return -1;
 	}
+	timer_setup(&switch_timer,switch_callback,0);
 	return 0;
 }
 
 /*release function*/
 static int switch_release(struct inode *inode, struct file *file){
-	printk("Switch device file is Closed...!!!\n");
+	del_timer(&switch_timer);
 	free_irq(switch_irq_number,NULL);
 	gpio_free(SWITCH_GPIO_IN);
+	printk("Switch device file is Closed...!!!\n");
 	return 0;
 }
 
 /*read function*/
 static ssize_t switch_read(struct file *filp,char __user *buf, size_t len, loff_t *off){
-	uint8_t switch_state = 0;
-	
 	if(len < 1){
 		printk("Buffer size is invalid\n");
 		return -1;
@@ -140,7 +144,6 @@ static int __init switch_driver_init(void){
 		unregister_chrdev_region(switch_dev, 1);
 		return -1;
 	}
-
 	printk("Switch Driver has been Loaded successfully!!!\n");
 	return 0;
 }
