@@ -1,3 +1,16 @@
+/* 
+*	LED Device Driver using 21 GPIO on Raspberry Pi
+*	Character Driver is used create special file
+*	and tested.
+*
+*	For Testing
+*	echo 1 > /dev/led_device -> turns on Led connected
+*  	echo 0 > /dev/led_device -> turns off Led connected
+*
+*
+*	Developed By Ram (bandiramprasad7@gmail.com)
+*/
+
 #include <linux/kernel.h>
 #include <linux/init.h>
 #include <linux/module.h>
@@ -10,14 +23,15 @@
 #include <linux/gpio.h>     
 #include <linux/err.h>
 
+
 /*GPIO pin*/
 #define LED_GPIO_OUT (21)
 
 /*device number*/
 static dev_t led_dev;
-/*led cdev structure*/
+/*Led cdev structure*/
 static struct cdev led_cdev;
-/*led class structure*/
+/*Led class structure*/
 static struct class *led_class;
 
 

@@ -1,3 +1,16 @@
+/* 
+*	Switch Device Driver using 20 GPIO on Raspberry Pi
+*	Character Driver is used create special file
+*	
+*	In order test switch driver Led driver has to be loaded
+*	once both switch and led drivers are loaded
+*	Run the application program and toggle the switch
+*	From application program: switch state will be printed
+*	Led turns on and off accoriding to the switch state
+*
+*
+*	Developed By Ram (bandiramprasad7@gmail.com)
+*/
 #include <linux/kernel.h>
 #include <linux/init.h>
 #include <linux/module.h>
@@ -32,7 +45,7 @@ static unsigned int switch_irq_number;
 /*timer variable*/
 static struct timer_list switch_timer;
 
-/*switch for interrupt handler*/
+/*switch state*/
 static uint8_t switch_state = 0;
 	
 /*timer callback*/
@@ -44,7 +57,7 @@ void switch_callback(struct timer_list *data){
 /*Interrupt handler*/
 static irqreturn_t gpio_irq_handler(int irq,void *dev_id) {
 	switch_state = gpio_get_value(SWITCH_GPIO_IN);
-	mod_timer(&switch_timer,jiffies + msecs_to_jiffies(200));
+	mod_timer(&switch_timer,jiffies + msecs_to_jiffies(200)); //200ms delay has been given
 	return IRQ_HANDLED;
 }
 

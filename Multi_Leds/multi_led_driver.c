@@ -1,3 +1,21 @@
+/* 
+*	Multi LEDs Device Driver using 21,20&16 GPIOs on Raspberry Pi
+*	Character Driver is used create 3 special files
+*	and tested.
+*
+*
+*   For Testing
+*	echo 1 > /dev/led_device-0 -> turns on Led connected to pin 21
+*  	echo 0 > /dev/led_device-0 -> turns off Led connected to pin 21
+*	echo 1 > /dev/led_device-1 -> turns on Led connected to pin 20
+*  	echo 0 > /dev/led_device-1 -> turns off Led connected to pin 20
+*	echo 1 > /dev/led_device-2 -> turns on Led connected to pin 16
+*  	echo 0 > /dev/led_device-2 -> turns off Led connected to pin 16
+*
+*
+*	Developed By Ram (ram.bandi@capgemini.com)
+*/
+
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/kdev_t.h>

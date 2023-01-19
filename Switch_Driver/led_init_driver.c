@@ -1,8 +1,17 @@
+/* 
+*	A simple LED Device Driver using 21 GPIO on Raspberry Pi
+*	Just to initialize GPIO 21 to make it as an output peripheral
+*	This modules is needed to be loaded in order to test switch device driver
+*
+*
+*	Developed By Ram (bandiramprasad7@gmail.com)
+*/
+
+
+
 #include <linux/kernel.h>
 #include <linux/init.h>
 #include <linux/module.h>
-#include <linux/delay.h>
-#include <linux/uaccess.h>  
 #include <linux/gpio.h>     
 #include <linux/err.h>
 
